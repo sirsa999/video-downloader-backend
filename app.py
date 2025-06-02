@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import yt_dlp
 
@@ -21,12 +20,23 @@ def download_video():
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            video_link = info['url']
-            title = info.get('title', 'No Title')
+            formats = info.get("formats", [])
+            title = info.get("title", "No Title")
+
+            # Choose the best downloadable format with video+audio
+            best_format = next(
+                (f for f in formats if f.get("acodec") != "none" and f.get("vcodec") != "none"),
+                None
+            )
+
+            if best_format:
+                video_download_url = best_format["url"]
+            else:
+                video_download_url = info["url"]
 
         return jsonify({
             "title": title,
-            "video_url": video_link
+            "video_url": video_download_url
         })
 
     except Exception as e:
